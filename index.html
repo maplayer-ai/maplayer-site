@@ -136,8 +136,9 @@
 
     .hero-sub {
       color: var(--subtext);
-      max-width: 580px;
+      max-width: none;
       font-size: 1.02rem;
+      white-space: normal;
       margin-bottom: 2rem;
     }
 
@@ -249,6 +250,20 @@
       font-size: 1rem;
       max-width: 540px;
       margin-bottom: 2rem;
+    }
+
+    .section-head {
+      display: block;
+      margin-bottom: 2rem;
+    }
+
+    .section-head h2 {
+      margin-bottom: 0.6rem;
+    }
+
+    .section-head .section-lead {
+      margin-bottom: 0;
+      max-width: none;
     }
 
     /* Quick start steps */
@@ -655,8 +670,10 @@
     <!-- Quick Start -->
     <div class="container">
       <section id="quickstart">
-        <h2>Quick start</h2>
-        <p class="section-lead">Three commands to give your AI agent a structured view of your codebase.</p>
+        <div class="section-head">
+          <h2>Quick start</h2>
+          <p class="section-lead">Three commands to give your AI agent a structured view of your codebase.</p>
+        </div>
 
         <div class="steps">
           <div class="step">
@@ -707,12 +724,14 @@
     <!-- MCP Tools -->
     <div class="container">
       <section id="tools">
-        <h2>MCP tools</h2>
-        <p class="section-lead">
-          Once <code>maplayer serve</code> is running, these tools are available to your agent.
-          All results include a <code>freshness</code> field (<code>fresh</code> / <code>stale</code> / <code>missing</code>)
-          so the agent knows whether the index reflects the current file on disk.
-        </p>
+        <div class="section-head">
+          <h2>MCP tools</h2>
+          <p class="section-lead">
+            Once <code>maplayer serve</code> is running, these tools are available to your agent.
+            All results include a <code>freshness</code> field (<code>fresh</code> / <code>stale</code> / <code>missing</code>)
+            so the agent knows whether the index reflects the current file on disk.
+          </p>
+        </div>
 
         <div class="table-wrap">
           <table class="tools-table">
@@ -772,8 +791,10 @@
     <!-- Integrations -->
     <div class="container">
       <section id="integrations">
-        <h2>Integrations</h2>
-        <p class="section-lead">Add <code>maplayer serve</code> as an MCP server in your AI tool's config.</p>
+        <div class="section-head">
+          <h2>Integrations</h2>
+          <p class="section-lead">Add <code>maplayer serve</code> as an MCP server in your AI tool's config.</p>
+        </div>
 
         <div class="tabs" role="tablist">
           <button class="tab-btn active" role="tab" onclick="showTab('claude', this)">Claude Code</button>
@@ -857,8 +878,10 @@
     <!-- Policy + Audit -->
     <div class="container">
       <section id="policy">
-        <h2>Policy &amp; audit</h2>
-        <p class="section-lead">Control what gets indexed and what agents can retrieve. Every tool call is logged.</p>
+        <div class="section-head">
+          <h2>Policy &amp; audit</h2>
+          <p class="section-lead">Control what gets indexed and what agents can retrieve. Every tool call is logged.</p>
+        </div>
 
         <div class="two-col">
           <div class="panel">
@@ -906,8 +929,10 @@
     <!-- Graph Visualizer -->
     <div class="container">
       <section id="visualize">
-        <h2>Graph visualizer</h2>
-        <p class="section-lead">Launch a local, interactive visualization of your indexed symbol graph.</p>
+        <div class="section-head">
+          <h2>Graph visualizer</h2>
+          <p class="section-lead">Launch a local, interactive visualization of your indexed symbol graph.</p>
+        </div>
 
         <div class="visualize-grid">
           <div>
@@ -949,11 +974,13 @@
     <!-- Timeline -->
     <div class="container">
       <section id="timeline">
-        <h2>Git timeline</h2>
-        <p class="section-lead">
-          <code>maplayer timeline</code> launches a local browser view of your repository's git lineage —
-          file events, symbol lifecycle, rename chains, and commit diffs, all backed by the indexed lineage tables.
-        </p>
+        <div class="section-head">
+          <h2>Git timeline</h2>
+          <p class="section-lead">
+            <code>maplayer timeline</code> launches a local browser view of your repository's git lineage —
+            file events, symbol lifecycle, rename chains, and commit diffs, all backed by the indexed lineage tables.
+          </p>
+        </div>
 
         <div class="visualize-grid">
           <div>
@@ -1014,8 +1041,10 @@
     <!-- Requirements -->
     <div class="container">
       <section style="padding-bottom: 4rem;">
-        <h2>Requirements</h2>
-        <p class="section-lead">Node.js 22+ and a repository with one of the supported languages.</p>
+        <div class="section-head">
+          <h2>Requirements</h2>
+          <p class="section-lead">Node.js 22+ and a repository with one of the supported languages.</p>
+        </div>
 
         <div class="cards">
           <div class="card">
