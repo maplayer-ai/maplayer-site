@@ -1,0 +1,1088 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MapLayer — Code Intelligence for AI Agents</title>
+  <meta name="description" content="MapLayer indexes your repository into a local SQLite graph and serves it over MCP — giving Claude, Codex, Cursor, and other AI tools structured code navigation." />
+  <meta property="og:title" content="MapLayer — Code Intelligence for AI Agents" />
+  <meta property="og:description" content="Index your repo. Serve over MCP. Give your AI structured code navigation." />
+  <meta property="og:type" content="website" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/hack-font@3/build/web/hack.css" />
+  <style>
+    :root {
+      --bg-0: #1e1e1e;
+      --bg-1: #252526;
+      --bg-2: #2d2d2d;
+      --text: #cccccc;
+      --subtext: #858585;
+      --line: #3e3e42;
+      --card: #252526;
+      --card-2: #1e1e1e;
+      --accent: #007acc;
+      --accent-dim: rgba(0, 122, 204, 0.15);
+      --accent-2: #005a9e;
+      --blue: #569cd6;
+      --blue-dim: rgba(86, 156, 214, 0.12);
+      --token-cmd: #569cd6;
+      --token-flag: #9cdcfe;
+      --token-key: #9cdcfe;
+      --token-val: #b5cea8;
+      --token-com: #6a9955;
+      --token-str: #ce9178;
+      --token-punc: #cccccc;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; font-size: 16px; }
+
+    body {
+      font-family: "Hack Nerd Font Mono", "Hack Nerd Font", "Hack", monospace;
+      background: var(--bg-0);
+      color: var(--text);
+      line-height: 1.65;
+    }
+
+    /* Backdrop */
+    .backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      background: var(--bg-0);
+    }
+
+    .container {
+      width: min(1080px, 92vw);
+      margin: 0 auto;
+    }
+
+    /* Nav */
+    nav.top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.4rem 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .brand {
+      font-weight: 800;
+      font-size: 1rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--blue);
+      text-decoration: none;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 1.6rem;
+      list-style: none;
+    }
+
+    .nav-links a {
+      color: var(--subtext);
+      text-decoration: none;
+      font-size: 0.93rem;
+      transition: color 0.15s;
+    }
+
+    .nav-links a:hover { color: var(--text); }
+
+    .nav-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--accent-dim);
+      border: 1px solid rgba(0, 122, 204, 0.4);
+      border-radius: 3px;
+      padding: 0.25rem 0.7rem;
+      font-size: 0.85rem;
+      color: var(--blue);
+      text-decoration: none;
+      transition: background 0.15s;
+    }
+
+    .nav-badge:hover { background: rgba(0, 122, 204, 0.22); }
+
+    /* Hero */
+    .hero {
+      padding: 5rem 0 3.5rem;
+      animation: rise 560ms ease-out both;
+    }
+
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(18px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .kicker {
+      font-size: 0.85rem;
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      color: var(--blue);
+      margin-bottom: 1.2rem;
+    }
+
+    h1 {
+      font-size: clamp(1.8rem, 4vw, 2.8rem);
+      font-weight: 800;
+      line-height: 1.2;
+      max-width: 720px;
+      margin-bottom: 1.2rem;
+    }
+
+    .hero-sub {
+      color: var(--subtext);
+      max-width: 580px;
+      font-size: 1.02rem;
+      margin-bottom: 2rem;
+    }
+
+    .install-block {
+      display: inline-flex;
+      align-items: center;
+      gap: 1rem;
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 0.8rem 1.2rem;
+      margin-bottom: 2rem;
+    }
+
+    .install-block code {
+      font-size: 1rem;
+      color: var(--accent);
+    }
+
+    .copy-btn {
+      background: none;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      padding: 0.25rem 0.6rem;
+      color: var(--subtext);
+      font-family: inherit;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .copy-btn:hover { border-color: var(--blue); color: var(--blue); }
+    .copy-btn.copied { border-color: var(--blue); color: var(--blue); }
+
+    .cta-row {
+      display: flex;
+      gap: 0.8rem;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      display: inline-block;
+      padding: 0.6rem 1.2rem;
+      border-radius: 6px;
+      font-family: inherit;
+      font-size: 0.95rem;
+      font-weight: 700;
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #ffffff;
+    }
+
+    .btn-primary:hover { background: #1a85ff; }
+
+    .btn-ghost {
+      background: transparent;
+      border: 1px solid var(--line);
+      color: var(--text);
+    }
+
+    .btn-ghost:hover { border-color: var(--blue); color: var(--blue); }
+
+    /* Stat bar */
+    .stat-bar {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 1px;
+      background: var(--line);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      margin: 3rem 0;
+    }
+
+    .stat-bar article {
+      background: var(--card);
+      padding: 1.4rem 1.6rem;
+      text-align: center;
+    }
+
+    .stat-bar h2 {
+      font-size: 1.8rem;
+      font-weight: 800;
+      color: var(--blue);
+    }
+
+    .stat-bar p {
+      font-size: 1rem;
+      color: var(--subtext);
+      margin-top: 0.25rem;
+    }
+
+    /* Section */
+    section { padding: 4rem 0; border-top: 1px solid var(--line); }
+
+    h2 {
+      font-size: 1.5rem;
+      font-weight: 800;
+      margin-bottom: 0.6rem;
+    }
+
+    .section-lead {
+      color: var(--subtext);
+      font-size: 1rem;
+      max-width: 540px;
+      margin-bottom: 2rem;
+    }
+
+    /* Quick start steps */
+    .steps {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .step {
+      display: grid;
+      grid-template-columns: 3rem 1fr;
+      background: var(--card);
+    }
+
+    .step-num {
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 1.4rem 0.5rem 1.4rem;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--blue);
+      background: var(--card-2);
+      border-right: 1px solid var(--line);
+    }
+
+    .step-body {
+      padding: 1.4rem 1.6rem;
+    }
+
+    .step-body h3 {
+      font-size: 1.02rem;
+      font-weight: 700;
+      margin-bottom: 0.4rem;
+    }
+
+    .step-body p {
+      color: var(--subtext);
+      font-size: 0.95rem;
+      margin-bottom: 0.8rem;
+    }
+
+    /* Code blocks */
+    pre {
+      background: var(--card-2);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 0.9rem 1.1rem;
+      overflow-x: auto;
+      font-size: 0.95rem;
+      line-height: 1.55;
+    }
+
+    pre code { color: var(--text); }
+
+    .token-cmd  { color: var(--token-cmd); }
+    .token-flag { color: var(--token-flag); }
+    .token-key  { color: var(--token-key); }
+    .token-val  { color: var(--token-val); }
+    .token-com  { color: var(--token-com); font-style: italic; }
+    .token-str  { color: var(--token-str); }
+    .token-punc { color: var(--token-punc); }
+
+    /* MCP tools table */
+    .tools-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.95rem;
+    }
+
+    .tools-table th {
+      text-align: left;
+      padding: 0.7rem 1rem;
+      background: var(--card-2);
+      color: var(--subtext);
+      font-weight: 700;
+      font-size: 0.85rem;
+      letter-spacing: 0.08em;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .tools-table th:first-child { border-radius: 6px 0 0 0; }
+    .tools-table th:last-child  { border-radius: 0 6px 0 0; }
+
+    .tools-table td {
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+    }
+
+    .tools-table tr:last-child td { border-bottom: none; }
+
+    .tools-table tr:nth-child(even) td { background: rgba(17, 27, 42, 0.5); }
+
+    .tools-table code {
+      color: var(--token-flag);
+      background: rgba(156, 220, 254, 0.08);
+      border-radius: 3px;
+      padding: 0.1em 0.4em;
+      font-size: 0.95rem;
+    }
+
+    .tools-table td:last-child { color: var(--subtext); }
+
+    .table-wrap {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    /* Integration tabs */
+    .tabs {
+      display: flex;
+      gap: 0;
+      border-bottom: 1px solid var(--line);
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+    }
+
+    .tab-btn {
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+      padding: 0.65rem 1.1rem;
+      font-family: inherit;
+      font-size: 1.02rem;
+      color: var(--subtext);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .tab-btn:hover { color: var(--text); }
+    .tab-btn.active { color: var(--blue); border-bottom-color: var(--accent); }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    .tab-panel h3 {
+      font-size: 1.02rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .tab-panel p {
+      color: var(--subtext);
+      font-size: 0.95rem;
+      margin-bottom: 0.9rem;
+    }
+
+    /* Cards grid */
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1px;
+      background: var(--line);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .card {
+      background: var(--card);
+      padding: 1.5rem;
+    }
+
+    .card h3 {
+      font-size: 1rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+
+    .card p {
+      color: var(--subtext);
+      font-size: 0.93rem;
+    }
+
+    .card code {
+      color: var(--accent);
+    }
+
+    .badge-pill {
+      display: inline-block;
+      font-size: 1.02rem;
+      font-weight: 700;
+      padding: 0.15rem 0.5rem;
+      border-radius: 20px;
+      margin-bottom: 0.6rem;
+      letter-spacing: 0.06em;
+    }
+
+    .badge-green { background: rgba(78, 201, 176, 0.15); color: #4ec9b0; }
+    .badge-blue  { background: var(--blue-dim); color: var(--blue); }
+
+    /* Policy / Audit side-by-side */
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+    }
+
+    @media (max-width: 640px) {
+      .two-col { grid-template-columns: 1fr; }
+      .nav-links { display: none; }
+    }
+
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 1.5rem;
+    }
+
+    .panel h3 {
+      font-size: 1.02rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+
+    .panel p {
+      color: var(--subtext);
+      font-size: 0.93rem;
+      margin-bottom: 1rem;
+    }
+
+    /* Visualize */
+    .visualize-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      align-items: start;
+    }
+
+    @media (max-width: 640px) {
+      .visualize-grid { grid-template-columns: 1fr; }
+    }
+
+    .feature-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .feature-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.6rem;
+      font-size: 0.95rem;
+      color: var(--subtext);
+    }
+
+    .feature-list li::before {
+      content: "▸";
+      color: var(--blue);
+      flex-shrink: 0;
+      margin-top: 0.05rem;
+    }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--line);
+      padding: 2rem 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    footer p { color: var(--subtext); font-size: 1.02rem; }
+
+    .footer-links {
+      display: flex;
+      gap: 1.2rem;
+    }
+
+    .footer-links a {
+      color: var(--subtext);
+      text-decoration: none;
+      font-size: 1.02rem;
+      transition: color 0.15s;
+    }
+
+    .footer-links a:hover { color: var(--blue); }
+
+    /* Inline code */
+    p code, li code {
+      color: var(--token-flag);
+      background: rgba(156, 220, 254, 0.08);
+      border-radius: 3px;
+      padding: 0.1em 0.4em;
+      font-size: 0.92em;
+    }
+
+    /* Note callout */
+    .note {
+      background: rgba(86, 156, 214, 0.08);
+      border: 1px solid rgba(86, 156, 214, 0.25);
+      border-radius: 3px;
+      padding: 0.85rem 1rem;
+      font-size: 0.93rem;
+      color: var(--subtext);
+      margin-top: 1rem;
+    }
+
+    .note strong { color: var(--blue); }
+
+    /* Back to top */
+    #back-to-top {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: var(--bg-1);
+      border: 1px solid var(--line);
+      color: var(--blue);
+      font-family: inherit;
+      font-size: 0.85rem;
+      padding: 0.5rem 0.9rem;
+      border-radius: 3px;
+      cursor: pointer;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s, border-color 0.15s;
+      z-index: 100;
+    }
+
+    #back-to-top.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    #back-to-top:hover { border-color: var(--blue); }
+
+  </style>
+</head>
+<body>
+  <div class="backdrop" aria-hidden="true"></div>
+
+  <!-- Nav -->
+  <div class="container">
+    <nav class="top">
+      <a class="brand" href="#">MapLayer</a>
+      <ul class="nav-links">
+        <li><a href="#quickstart">Quick Start</a></li>
+        <li><a href="#tools">MCP Tools</a></li>
+        <li><a href="#integrations">Integrations</a></li>
+        <li><a href="#policy">Policy</a></li>
+        <li><a href="#visualize">Visualize</a></li>
+        <li><a href="#timeline">Timeline</a></li>
+      </ul>
+      <a class="nav-badge" href="https://www.npmjs.com/package/@maplayer/maplayer" target="_blank" rel="noopener">
+        npm
+      </a>
+    </nav>
+  </div>
+
+  <main>
+    <!-- Hero -->
+    <div class="container">
+      <section class="hero" style="border: none; padding-bottom: 0;">
+        <p class="kicker">@maplayer/maplayer · npm · <span id="npm-version">v0.1.8</span></p>
+        <h1>Code intelligence for AI agents.</h1>
+        <p class="hero-sub">
+          MapLayer indexes your repository into a local SQLite graph and serves it over MCP —
+          giving Claude, Codex, Cursor, and other AI tools structured code navigation instead of raw file reads.
+        </p>
+
+        <div class="install-block">
+          <code>npm install -g @maplayer/maplayer</code>
+          <button class="copy-btn" onclick="copyInstall(this)">copy</button>
+        </div>
+
+        <div class="cta-row">
+          <a class="btn btn-primary" href="#quickstart">Get started</a>
+          <a class="btn btn-ghost" href="https://www.npmjs.com/package/@maplayer/maplayer" target="_blank" rel="noopener">npm page</a>
+        </div>
+      </section>
+
+      <!-- Stats -->
+      <div class="stat-bar">
+        <article>
+          <h2>8</h2>
+          <p>languages: TS · JS · Java · Kotlin · Python · C# · Swift · YAML</p>
+        </article>
+        <article>
+          <h2>10</h2>
+          <p>MCP tools for structured code navigation</p>
+        </article>
+        <article>
+          <h2>Local</h2>
+          <p>SQLite graph, runs offline, no data leaves your machine</p>
+        </article>
+        <article>
+          <h2>MCP</h2>
+          <p>model context protocol — works with any agent</p>
+        </article>
+      </div>
+    </div>
+
+    <!-- Quick Start -->
+    <div class="container">
+      <section id="quickstart">
+        <h2>Quick start</h2>
+        <p class="section-lead">Three commands to give your AI agent a structured view of your codebase.</p>
+
+        <div class="steps">
+          <div class="step">
+            <div class="step-num">01</div>
+            <div class="step-body">
+              <h3>Install</h3>
+              <p>Install MapLayer globally. Requires Node.js 22+.</p>
+              <pre><code><span class="token-cmd">npm</span> install -g @maplayer/maplayer</code></pre>
+              <div class="note">
+                <strong>Note:</strong> If your project uses a different Node version, install under Node 22 via <code>nvm</code> or <code>fnm</code> and MapLayer will run independently.
+              </div>
+            </div>
+          </div>
+
+          <div class="step">
+            <div class="step-num">02</div>
+            <div class="step-body">
+              <h3>Init &amp; index</h3>
+              <p>Run from the root of the repository you want to use with your AI tool.</p>
+              <pre><code><span class="token-cmd">maplayer</span> init     <span class="token-com"># scaffold .maplayer/ config + MCP wiring blocks</span>
+<span class="token-cmd">maplayer</span> index    <span class="token-com"># parse the repo into the SQLite code graph</span></code></pre>
+              <div class="note">
+                <strong>Note:</strong> <code>maplayer init</code> injects managed blocks into existing <code>CLAUDE.md</code>, <code>AGENTS.md</code>, <code>.cursorrules</code>, and <code>GEMINI.md</code>. It does not create these files if they are missing — create them first, then rerun <code>init</code>.
+              </div>
+            </div>
+          </div>
+
+          <div class="step">
+            <div class="step-num">03</div>
+            <div class="step-body">
+              <h3>Wire <code>maplayer serve</code> into your AI tool</h3>
+              <p>Add the MCP server entry to your agent's config. See the <a href="#integrations" style="color: var(--accent);">Integrations</a> section for tool-specific instructions.</p>
+              <pre><code><span class="token-com"># Example: .claude/settings.json</span>
+<span class="token-punc">{</span>
+  <span class="token-key">"mcpServers"</span><span class="token-punc">:</span> <span class="token-punc">{</span>
+    <span class="token-key">"maplayer"</span><span class="token-punc">:</span> <span class="token-punc">{</span>
+      <span class="token-key">"command"</span><span class="token-punc">:</span> <span class="token-str">"maplayer"</span><span class="token-punc">,</span>
+      <span class="token-key">"args"</span><span class="token-punc">:</span> <span class="token-punc">[</span><span class="token-str">"serve"</span><span class="token-punc">]</span>
+    <span class="token-punc">}</span>
+  <span class="token-punc">}</span>
+<span class="token-punc">}</span></code></pre>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- MCP Tools -->
+    <div class="container">
+      <section id="tools">
+        <h2>MCP tools</h2>
+        <p class="section-lead">
+          Once <code>maplayer serve</code> is running, these tools are available to your agent.
+          All results include a <code>freshness</code> field (<code>fresh</code> / <code>stale</code> / <code>missing</code>)
+          so the agent knows whether the index reflects the current file on disk.
+        </p>
+
+        <div class="table-wrap">
+          <table class="tools-table">
+            <thead>
+              <tr>
+                <th>Tool</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>search_symbols</code></td>
+                <td>Find functions, classes, and types by name or keyword</td>
+              </tr>
+              <tr>
+                <td><code>find_by_intent</code></td>
+                <td>FTS5 full-text search over file summaries and symbol names</td>
+              </tr>
+              <tr>
+                <td><code>trace_dependencies</code></td>
+                <td>List imports and dependents for a file</td>
+              </tr>
+              <tr>
+                <td><code>find_callers</code></td>
+                <td>Find all call sites of a function</td>
+              </tr>
+              <tr>
+                <td><code>find_callees</code></td>
+                <td>Find all functions called by a function</td>
+              </tr>
+              <tr>
+                <td><code>get_symbol_body</code></td>
+                <td>Read a symbol's exact source (policy-gated)</td>
+              </tr>
+              <tr>
+                <td><code>get_file_slice</code></td>
+                <td>Read a specific line range from a file (policy-gated)</td>
+              </tr>
+              <tr>
+                <td><code>get_file_summary</code></td>
+                <td>Return a cached file summary with freshness metadata</td>
+              </tr>
+              <tr>
+                <td><code>describe_module</code></td>
+                <td>Return a file's purpose, exports, and key behaviors</td>
+              </tr>
+              <tr>
+                <td><code>list_changed_files</code></td>
+                <td>List files changed since last index or a given commit</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <!-- Integrations -->
+    <div class="container">
+      <section id="integrations">
+        <h2>Integrations</h2>
+        <p class="section-lead">Add <code>maplayer serve</code> as an MCP server in your AI tool's config.</p>
+
+        <div class="tabs" role="tablist">
+          <button class="tab-btn active" role="tab" onclick="showTab('claude', this)">Claude Code</button>
+          <button class="tab-btn" role="tab" onclick="showTab('codex', this)">Codex</button>
+          <button class="tab-btn" role="tab" onclick="showTab('gemini', this)">Gemini CLI</button>
+          <button class="tab-btn" role="tab" onclick="showTab('cursor', this)">Cursor</button>
+          <button class="tab-btn" role="tab" onclick="showTab('continue', this)">Continue.dev</button>
+          <button class="tab-btn" role="tab" onclick="showTab('roo', this)">Roo Code</button>
+        </div>
+
+        <div id="tab-claude" class="tab-panel active">
+          <h3>Claude Code</h3>
+          <p>Add to your project's <code>.claude/settings.json</code>:</p>
+          <pre><code><span class="token-punc">{</span>
+  <span class="token-key">"mcpServers"</span><span class="token-punc">:</span> <span class="token-punc">{</span>
+    <span class="token-key">"maplayer"</span><span class="token-punc">:</span> <span class="token-punc">{</span>
+      <span class="token-key">"command"</span><span class="token-punc">:</span> <span class="token-str">"maplayer"</span><span class="token-punc">,</span>
+      <span class="token-key">"args"</span><span class="token-punc">:</span> <span class="token-punc">[</span><span class="token-str">"serve"</span><span class="token-punc">]</span>
+    <span class="token-punc">}</span>
+  <span class="token-punc">}</span>
+<span class="token-punc">}</span></code></pre>
+        </div>
+
+        <div id="tab-codex" class="tab-panel">
+          <h3>Codex</h3>
+          <p>Add to <code>.codex/config.toml</code> in your repo:</p>
+          <pre><code><span class="token-punc">[</span><span class="token-key">mcp_servers.maplayer</span><span class="token-punc">]</span>
+<span class="token-key">command</span> <span class="token-punc">=</span> <span class="token-str">"maplayer"</span>
+<span class="token-key">args</span> <span class="token-punc">=</span> <span class="token-punc">[</span><span class="token-str">"serve"</span><span class="token-punc">]</span>
+<span class="token-key">startup_timeout_sec</span> <span class="token-punc">=</span> <span class="token-val">30</span></code></pre>
+        </div>
+
+        <div id="tab-gemini" class="tab-panel">
+          <h3>Gemini CLI</h3>
+          <p>Add to <code>.gemini/settings.json</code> in your repo (or <code>~/.gemini/settings.json</code> for all projects):</p>
+          <pre><code><span class="token-punc">{</span>
+  <span class="token-key">"mcpServers"</span><span class="token-punc">:</span> <span class="token-punc">{</span>
+    <span class="token-key">"maplayer"</span><span class="token-punc">:</span> <span class="token-punc">{</span>
+      <span class="token-key">"command"</span><span class="token-punc">:</span> <span class="token-str">"maplayer"</span><span class="token-punc">,</span>
+      <span class="token-key">"args"</span><span class="token-punc">:</span> <span class="token-punc">[</span><span class="token-str">"serve"</span><span class="token-punc">]</span>
+    <span class="token-punc">}</span>
+  <span class="token-punc">}</span>
+<span class="token-punc">}</span></code></pre>
+          <div class="note"><strong>Note:</strong> <code>settings.json</code> at repo root is also supported.</div>
+        </div>
+
+        <div id="tab-cursor" class="tab-panel">
+          <h3>Cursor</h3>
+          <p>In Cursor settings, open the MCP section and add a new server:</p>
+          <pre><code><span class="token-key">Command</span><span class="token-punc">:</span>  <span class="token-str">maplayer</span>
+<span class="token-key">Args</span><span class="token-punc">:</span>     <span class="token-str">serve</span></code></pre>
+        </div>
+
+        <div id="tab-continue" class="tab-panel">
+          <h3>Continue.dev</h3>
+          <p>Add to <code>.continue/config.yaml</code> in your repo (or <code>~/.continue/config.yaml</code> for all projects):</p>
+          <pre><code><span class="token-key">mcpServers</span><span class="token-punc">:</span>
+  <span class="token-punc">-</span> <span class="token-key">name</span><span class="token-punc">:</span> <span class="token-str">maplayer</span>
+    <span class="token-key">type</span><span class="token-punc">:</span> <span class="token-str">stdio</span>
+    <span class="token-key">command</span><span class="token-punc">:</span> <span class="token-str">maplayer</span>
+    <span class="token-key">args</span><span class="token-punc">:</span>
+      <span class="token-punc">-</span> <span class="token-str">serve</span></code></pre>
+          <div class="note"><strong>Note:</strong> MCP tools are only available in agent mode in Continue.</div>
+        </div>
+
+        <div id="tab-roo" class="tab-panel">
+          <h3>Roo Code</h3>
+          <p>Add to <code>.roo/mcp.json</code> in your repo (or via the global MCP settings in VS Code):</p>
+          <pre><code><span class="token-punc">{</span>
+  <span class="token-key">"mcpServers"</span><span class="token-punc">:</span> <span class="token-punc">{</span>
+    <span class="token-key">"maplayer"</span><span class="token-punc">:</span> <span class="token-punc">{</span>
+      <span class="token-key">"command"</span><span class="token-punc">:</span> <span class="token-str">"maplayer"</span><span class="token-punc">,</span>
+      <span class="token-key">"args"</span><span class="token-punc">:</span> <span class="token-punc">[</span><span class="token-str">"serve"</span><span class="token-punc">]</span>
+    <span class="token-punc">}</span>
+  <span class="token-punc">}</span>
+<span class="token-punc">}</span></code></pre>
+        </div>
+      </section>
+    </div>
+
+    <!-- Policy + Audit -->
+    <div class="container">
+      <section id="policy">
+        <h2>Policy &amp; audit</h2>
+        <p class="section-lead">Control what gets indexed and what agents can retrieve. Every tool call is logged.</p>
+
+        <div class="two-col">
+          <div class="panel">
+            <h3>Policy</h3>
+            <p><code>maplayer init</code> creates <code>.maplayer/policy.yaml</code> — commit this file. It controls indexing scope and agent retrieval limits.</p>
+            <pre><code><span class="token-key">exclude</span><span class="token-punc">:</span>
+  <span class="token-key">paths</span><span class="token-punc">:</span>
+    <span class="token-punc">-</span> <span class="token-str">".env*"</span>
+    <span class="token-punc">-</span> <span class="token-str">"secrets/**"</span>
+    <span class="token-punc">-</span> <span class="token-str">"**/*.pem"</span>
+
+<span class="token-key">retrieval</span><span class="token-punc">:</span>
+  <span class="token-key">allow_raw_file_slice</span><span class="token-punc">:</span> <span class="token-val">true</span>
+  <span class="token-key">max_slice_lines</span><span class="token-punc">:</span> <span class="token-val">120</span>
+  <span class="token-key">stale_summary_mode</span><span class="token-punc">:</span> <span class="token-str">"flag"</span></code></pre>
+            <p style="margin-top: 1rem;">Test any path:</p>
+            <pre><code><span class="token-cmd">maplayer</span> policy check .env
+<span class="token-com"># excluded  tool=index  path=.env</span>
+
+<span class="token-cmd">maplayer</span> policy check src/main.ts
+<span class="token-com"># allowed   tool=index  path=src/main.ts</span></code></pre>
+          </div>
+
+          <div class="panel">
+            <h3>Audit log</h3>
+            <p>Every tool call is appended to <code>.maplayer/audit.log</code> (gitignored). Inspect it with the built-in commands.</p>
+            <pre><code><span class="token-com"># last 20 entries</span>
+<span class="token-cmd">maplayer</span> audit show
+
+<span class="token-com"># filter by tool</span>
+<span class="token-cmd">maplayer</span> audit show <span class="token-flag">--tool</span> get_symbol_body
+
+<span class="token-com"># JSON output</span>
+<span class="token-cmd">maplayer</span> audit show <span class="token-flag">--json</span>
+
+<span class="token-com"># live stream</span>
+<span class="token-cmd">maplayer</span> audit tail</code></pre>
+            <p style="margin-top: 1rem;">Exits non-zero for excluded paths — usable in CI:</p>
+            <pre><code><span class="token-cmd">maplayer</span> policy check .env <span class="token-punc">||</span> exit 1</code></pre>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- Graph Visualizer -->
+    <div class="container">
+      <section id="visualize">
+        <h2>Graph visualizer</h2>
+        <p class="section-lead">Launch a local, interactive visualization of your indexed symbol graph.</p>
+
+        <div class="visualize-grid">
+          <div>
+            <pre><code><span class="token-com"># default</span>
+<span class="token-cmd">maplayer</span> visualize
+
+<span class="token-com"># with limits</span>
+<span class="token-cmd">maplayer</span> visualize <span class="token-flag">--port</span> 4311 \
+  <span class="token-flag">--max-nodes</span> 1200 \
+  <span class="token-flag">--max-edges</span> 4000</code></pre>
+
+            <ul class="feature-list" style="margin-top: 1.2rem;">
+              <li>Force-directed graph layout</li>
+              <li>Pan, zoom, node metadata on hover</li>
+              <li>Search filter to highlight symbols</li>
+              <li>Minimap for navigating large graphs</li>
+              <li>Paginated loading for large repos (<code>Load More Graph</code>)</li>
+            </ul>
+          </div>
+
+          <div class="panel">
+            <h3>Gitignore</h3>
+            <p><code>maplayer init</code> adds the correct entries automatically. To add manually:</p>
+            <pre><code><span class="token-com"># .gitignore</span>
+.maplayer/index.db
+.maplayer/index.db-shm
+.maplayer/index.db-wal
+.maplayer/vectors.db
+.maplayer/vectors.db-shm
+.maplayer/vectors.db-wal
+.maplayer/summaries/
+.maplayer/audit.log</code></pre>
+            <p style="margin-top: 0.9rem;"><code>policy.yaml</code> and <code>config.yaml</code> should be committed.</p>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- Timeline -->
+    <div class="container">
+      <section id="timeline">
+        <h2>Git timeline</h2>
+        <p class="section-lead">
+          <code>maplayer timeline</code> launches a local browser view of your repository's git lineage —
+          file events, symbol lifecycle, rename chains, and commit diffs, all backed by the indexed lineage tables.
+        </p>
+
+        <div class="visualize-grid">
+          <div>
+            <pre><code><span class="token-com"># default (port 4312)</span>
+<span class="token-cmd">maplayer</span> timeline
+
+<span class="token-com"># filter by date range</span>
+<span class="token-cmd">maplayer</span> timeline <span class="token-flag">--from</span> 2025-01-01 <span class="token-flag">--to</span> 2025-06-01
+
+<span class="token-com"># filter by author</span>
+<span class="token-cmd">maplayer</span> timeline <span class="token-flag">--author</span> alice
+
+<span class="token-com"># filter by event type</span>
+<span class="token-cmd">maplayer</span> timeline <span class="token-flag">--event</span> added,renamed,deleted
+
+<span class="token-com"># filter by file path</span>
+<span class="token-cmd">maplayer</span> timeline <span class="token-flag">--file</span> src/auth
+
+<span class="token-com"># filter by symbol name</span>
+<span class="token-cmd">maplayer</span> timeline <span class="token-flag">--symbol</span> authenticate</code></pre>
+
+            <div class="note" style="margin-top: 1rem;">
+              <strong>Requires lineage data:</strong> run <code>maplayer index</code> with full history enabled before launching the timeline view.
+            </div>
+          </div>
+
+          <div>
+            <ul class="feature-list">
+              <li>File event feed — <code>added</code>, <code>modified</code>, <code>deleted</code>, <code>renamed</code>, <code>copied</code></li>
+              <li>Symbol lifecycle — <code>introduced</code>, <code>changed</code>, <code>moved</code>, <code>removed</code></li>
+              <li>Rename chain — canonical file identity across moves</li>
+              <li>Per-commit file and symbol breakdown</li>
+              <li>Inline diff view for any commit + file</li>
+              <li>Filter by date, author, event type, file, or symbol</li>
+              <li>URL filters — share a scoped view as a link</li>
+            </ul>
+
+            <div class="panel" style="margin-top: 1.2rem;">
+              <h3>Options</h3>
+              <table class="tools-table" style="margin-top: 0.5rem;">
+                <tbody>
+                  <tr><td><code>--port</code></td><td>HTTP port (default <code>4312</code>)</td></tr>
+                  <tr><td><code>--host</code></td><td>Bind address (default <code>127.0.0.1</code>)</td></tr>
+                  <tr><td><code>--from</code></td><td>Start date <code>YYYY-MM-DD</code></td></tr>
+                  <tr><td><code>--to</code></td><td>End date <code>YYYY-MM-DD</code></td></tr>
+                  <tr><td><code>--author</code></td><td>Author name or email (substring)</td></tr>
+                  <tr><td><code>--event</code></td><td>Comma-separated event types</td></tr>
+                  <tr><td><code>--file</code></td><td>File path substring filter</td></tr>
+                  <tr><td><code>--symbol</code></td><td>Symbol name filter</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- Requirements -->
+    <div class="container">
+      <section style="padding-bottom: 4rem;">
+        <h2>Requirements</h2>
+        <p class="section-lead">Node.js 22+ and a repository with one of the supported languages.</p>
+
+        <div class="cards">
+          <div class="card">
+            <span class="badge-pill badge-green">Supported</span>
+            <h3>Languages</h3>
+            <p>TypeScript · JavaScript · Java · Kotlin · Python · C# · Swift · YAML</p>
+          </div>
+          <div class="card">
+            <span class="badge-pill badge-green">Supported</span>
+            <h3>Runtime</h3>
+            <p>Node.js 22+. Use <code>nvm</code> or <code>fnm</code> to install alongside other Node versions.</p>
+          </div>
+          <div class="card">
+            <span class="badge-pill badge-blue">Note</span>
+            <h3>Experimental SQLite</h3>
+            <p><code>node:sqlite</code> is experimental in Node 22 and may print an <code>ExperimentalWarning</code> to stderr. Suppress with <code>NODE_NO_WARNINGS=1 maplayer index</code>.</p>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <button id="back-to-top" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑ top</button>
+
+  <!-- Footer -->
+  <div class="container">
+    <footer>
+      <p>© <span id="year"></span> Maplayer · Code intelligence for AI agents</p>
+      <div class="footer-links">
+        <a href="https://www.npmjs.com/package/@maplayer/maplayer" target="_blank" rel="noopener">npm</a>
+        <a href="mailto:founders@maplayer.ai">founders@maplayer.ai</a>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    document.getElementById('year').textContent = new Date().getFullYear();
+
+    const backToTop = document.getElementById('back-to-top');
+    window.addEventListener('scroll', () => {
+      backToTop.classList.toggle('visible', window.scrollY > 400);
+    }, { passive: true });
+
+    fetch('https://registry.npmjs.org/@maplayer/maplayer/latest')
+      .then(r => r.json())
+      .then(d => {
+        if (d.version) document.getElementById('npm-version').textContent = 'v' + d.version;
+      })
+      .catch(() => {});
+
+    function copyInstall(btn) {
+      navigator.clipboard.writeText('npm install -g @maplayer/maplayer').then(() => {
+        btn.textContent = 'copied!';
+        btn.classList.add('copied');
+        setTimeout(() => {
+          btn.textContent = 'copy';
+          btn.classList.remove('copied');
+        }, 2000);
+      });
+    }
+
+    function showTab(id, btn) {
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById('tab-' + id).classList.add('active');
+      btn.classList.add('active');
+    }
+  </script>
+</body>
+</html>
