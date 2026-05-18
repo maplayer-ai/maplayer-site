@@ -378,6 +378,9 @@
       border-radius: 3px;
       padding: 0.1em 0.4em;
       font-size: 0.95rem;
+      white-space: nowrap;
+      overflow-wrap: normal;
+      word-break: normal;
     }
 
     .tools-table td:last-child { color: var(--subtext); }
@@ -530,6 +533,19 @@
       color: var(--subtext);
     }
 
+    .status-item {
+      display: block;
+      min-width: 0;
+    }
+
+    .status-row {
+      display: flex;
+      width: 100%;
+      flex-wrap: wrap;
+      gap: 0.45rem;
+      margin-top: 0.35rem;
+    }
+
     .feature-list li::before {
       content: "▸";
       color: var(--blue);
@@ -571,6 +587,18 @@
       border-radius: 3px;
       padding: 0.1em 0.4em;
       font-size: 0.92em;
+      white-space: nowrap;
+      overflow-wrap: normal;
+      word-break: normal;
+    }
+
+    .cmd-inline {
+      font-family: inherit;
+      white-space: nowrap;
+    }
+
+    .cmd-inline .token-cmd {
+      color: var(--token-cmd);
     }
 
     /* Note callout */
@@ -605,8 +633,7 @@
     .hero-sub,
     .section-lead,
     .tools-table th,
-    .tools-table td,
-    code {
+    .tools-table td {
       overflow-wrap: anywhere;
       word-break: break-word;
     }
@@ -651,8 +678,8 @@
         <li><a href="#tools">MCP Tools</a></li>
         <li><a href="#integrations">Integrations</a></li>
         <li><a href="#policy">Policy</a></li>
-        <li><a href="#visualize">Visualize</a></li>
         <li><a href="#timeline">Timeline</a></li>
+        <li><a href="#visualize">Visualize</a></li>
       </ul>
       <a class="nav-badge" href="https://www.npmjs.com/package/@maplayer/maplayer" target="_blank" rel="noopener">
         npm
@@ -729,8 +756,11 @@
             <div class="step-body">
               <h3>Init &amp; index</h3>
               <p>Run from the root of the repository you want to use with your AI tool.</p>
-              <pre><code><span class="token-cmd">maplayer</span> init     <span class="token-com"># scaffold .maplayer/ config + MCP wiring blocks</span>
-<span class="token-cmd">maplayer</span> index    <span class="token-com"># parse the repo into the SQLite code graph</span></code></pre>
+              <pre><code><span class="token-com"># scaffold .maplayer/ config + MCP wiring blocks</span>
+<span class="token-cmd">maplayer</span> init
+
+<span class="token-com"># parse the repo into the SQLite code graph</span>
+<span class="token-cmd">maplayer</span> index</code></pre>
               <div class="note">
                 <strong>Note:</strong> <code>maplayer init</code> injects managed blocks into existing <code>CLAUDE.md</code>, <code>AGENTS.md</code>, <code>.cursorrules</code>, and <code>GEMINI.md</code>. It does not create these files if they are missing — create them first, then rerun <code>init</code>.
               </div>
@@ -962,6 +992,73 @@
       </section>
     </div>
 
+    <!-- Timeline -->
+    <div class="container">
+      <section id="timeline">
+        <div class="section-head">
+          <h2>Git timeline</h2>
+          <p class="section-lead">
+            <code>maplayer timeline</code> launches a local browser view of your repository's git lineage —
+            file events, symbol lifecycle, rename chains, and commit diffs, all backed by the indexed lineage tables.
+          </p>
+        </div>
+
+        <div class="visualize-grid">
+          <div>
+            <pre><code><span class="token-com"># default (port 4312)</span>
+<span class="token-cmd">maplayer</span> timeline
+
+<span class="token-com"># filter by date range</span>
+<span class="token-cmd">maplayer</span> timeline <span class="token-flag">--from</span> 2025-01-01 <span class="token-flag">--to</span> 2025-06-01
+
+<span class="token-com"># filter by author</span>
+<span class="token-cmd">maplayer</span> timeline <span class="token-flag">--author</span> alice
+
+<span class="token-com"># filter by event type</span>
+<span class="token-cmd">maplayer</span> timeline <span class="token-flag">--event</span> added,renamed,deleted
+
+<span class="token-com"># filter by file path</span>
+<span class="token-cmd">maplayer</span> timeline <span class="token-flag">--file</span> src/auth
+
+<span class="token-com"># filter by symbol name</span>
+<span class="token-cmd">maplayer</span> timeline <span class="token-flag">--symbol</span> authenticate</code></pre>
+
+            <div class="note" style="margin-top: 1rem;">
+              <strong>Requires lineage data:</strong> run <span class="cmd-inline"><span class="token-cmd">maplayer</span> <span class="token-cmd">index</span></span> with full history enabled before launching the timeline view.
+            </div>
+          </div>
+
+          <div>
+            <ul class="feature-list">
+              <li><span class="status-item">File event feed —<span class="status-row"><code>added</code>, <code>modified</code>, <code>deleted</code>, <code>renamed</code>, <code>copied</code></span></span></li>
+              <li><span class="status-item">Symbol lifecycle —<span class="status-row"><code>introduced</code>, <code>changed</code>, <code>moved</code>, <code>removed</code></span></span></li>
+              <li>Rename chain — canonical file identity across moves</li>
+              <li>Per-commit file and symbol breakdown</li>
+              <li>Inline diff view for any commit + file</li>
+              <li>Filter by date, author, event type, file, or symbol</li>
+              <li>URL filters — share a scoped view as a link</li>
+            </ul>
+
+            <div class="panel" style="margin-top: 1.2rem;">
+              <h3>Options</h3>
+              <table class="tools-table" style="margin-top: 0.5rem;">
+                <tbody>
+                  <tr><td><code>--port</code></td><td>HTTP port (default <code>4312</code>)</td></tr>
+                  <tr><td><code>--host</code></td><td>Bind address (default <code>127.0.0.1</code>)</td></tr>
+                  <tr><td><code>--from</code></td><td>Start date <code>YYYY-MM-DD</code></td></tr>
+                  <tr><td><code>--to</code></td><td>End date <code>YYYY-MM-DD</code></td></tr>
+                  <tr><td><code>--author</code></td><td>Author name or email (substring)</td></tr>
+                  <tr><td><code>--event</code></td><td>Comma-separated event types</td></tr>
+                  <tr><td><code>--file</code></td><td>File path substring filter</td></tr>
+                  <tr><td><code>--symbol</code></td><td>Symbol name filter</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
     <!-- Graph Visualizer -->
     <div class="container">
       <section id="visualize">
@@ -1002,73 +1099,6 @@
 .maplayer/summaries/
 .maplayer/audit.log</code></pre>
             <p style="margin-top: 0.9rem;"><code>policy.yaml</code> and <code>config.yaml</code> should be committed.</p>
-          </div>
-        </div>
-      </section>
-    </div>
-
-    <!-- Timeline -->
-    <div class="container">
-      <section id="timeline">
-        <div class="section-head">
-          <h2>Git timeline</h2>
-          <p class="section-lead">
-            <code>maplayer timeline</code> launches a local browser view of your repository's git lineage —
-            file events, symbol lifecycle, rename chains, and commit diffs, all backed by the indexed lineage tables.
-          </p>
-        </div>
-
-        <div class="visualize-grid">
-          <div>
-            <pre><code><span class="token-com"># default (port 4312)</span>
-<span class="token-cmd">maplayer</span> timeline
-
-<span class="token-com"># filter by date range</span>
-<span class="token-cmd">maplayer</span> timeline <span class="token-flag">--from</span> 2025-01-01 <span class="token-flag">--to</span> 2025-06-01
-
-<span class="token-com"># filter by author</span>
-<span class="token-cmd">maplayer</span> timeline <span class="token-flag">--author</span> alice
-
-<span class="token-com"># filter by event type</span>
-<span class="token-cmd">maplayer</span> timeline <span class="token-flag">--event</span> added,renamed,deleted
-
-<span class="token-com"># filter by file path</span>
-<span class="token-cmd">maplayer</span> timeline <span class="token-flag">--file</span> src/auth
-
-<span class="token-com"># filter by symbol name</span>
-<span class="token-cmd">maplayer</span> timeline <span class="token-flag">--symbol</span> authenticate</code></pre>
-
-            <div class="note" style="margin-top: 1rem;">
-              <strong>Requires lineage data:</strong> run <code>maplayer index</code> with full history enabled before launching the timeline view.
-            </div>
-          </div>
-
-          <div>
-            <ul class="feature-list">
-              <li>File event feed — <code>added</code>, <code>modified</code>, <code>deleted</code>, <code>renamed</code>, <code>copied</code></li>
-              <li>Symbol lifecycle — <code>introduced</code>, <code>changed</code>, <code>moved</code>, <code>removed</code></li>
-              <li>Rename chain — canonical file identity across moves</li>
-              <li>Per-commit file and symbol breakdown</li>
-              <li>Inline diff view for any commit + file</li>
-              <li>Filter by date, author, event type, file, or symbol</li>
-              <li>URL filters — share a scoped view as a link</li>
-            </ul>
-
-            <div class="panel" style="margin-top: 1.2rem;">
-              <h3>Options</h3>
-              <table class="tools-table" style="margin-top: 0.5rem;">
-                <tbody>
-                  <tr><td><code>--port</code></td><td>HTTP port (default <code>4312</code>)</td></tr>
-                  <tr><td><code>--host</code></td><td>Bind address (default <code>127.0.0.1</code>)</td></tr>
-                  <tr><td><code>--from</code></td><td>Start date <code>YYYY-MM-DD</code></td></tr>
-                  <tr><td><code>--to</code></td><td>End date <code>YYYY-MM-DD</code></td></tr>
-                  <tr><td><code>--author</code></td><td>Author name or email (substring)</td></tr>
-                  <tr><td><code>--event</code></td><td>Comma-separated event types</td></tr>
-                  <tr><td><code>--file</code></td><td>File path substring filter</td></tr>
-                  <tr><td><code>--symbol</code></td><td>Symbol name filter</td></tr>
-                </tbody>
-              </table>
-            </div>
           </div>
         </div>
       </section>
